@@ -25,5 +25,10 @@ class MyLineReg:
             gradient = 2 / observation_count * np.dot(X.T, (y_predict - y))
             self.weights -= self.learning_rate * gradient
 
+    def predict(self, X: pd.DataFrame):
+        X.insert(0, "x_0", 1)
+        y_predict = (X * self.weights).sum(axis=1)
+        return y_predict
+
     def get_coef(self):
         return self.weights[1:]
