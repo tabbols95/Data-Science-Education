@@ -1,14 +1,28 @@
 import pandas as pd
 import numpy as np
-from typing import Union
+from typing import Optional
 
 
 class MyLineReg:
+    """Линейная регрессия"""
+
+    n_iter: int
+    """Количество шагов градиентного спуска"""
+
+    learning_rate: float
+    """Коэффициент скорости обучения градиентного спуска"""
+
+    weights: Optional[list]
+    """Веса модели"""
+
+    MSE: Optional[float]
+    """Среднеквадратичная ошибка"""
+
     def __init__(self, **kwargs):
         self.n_iter = kwargs.get("n_iter")
         self.learning_rate = kwargs.get("learning_rate")
-        self.weights = None  # веса фичей
-        self.MSE = None  # значение потерь
+        self.weights = None
+        self.MSE = None
 
     def __repr__(self):
         return f"MyLineReg class: n_iter={self.n_iter}, learning_rate={self.learning_rate}"
@@ -16,7 +30,7 @@ class MyLineReg:
     def fit(self, X: pd.DataFrame, y: pd.Series):
 
         observation_count, feature_count = X.shape
-        X.insert(0, "x_0", 1)
+        X.insert(0, "x_0", 1)  # свободный коэффициент
         self.weights = np.ones(feature_count + 1)
 
         for i in range(self.n_iter):
