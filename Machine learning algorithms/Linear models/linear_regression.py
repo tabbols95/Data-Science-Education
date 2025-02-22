@@ -1,6 +1,7 @@
+import random
 import pandas as pd
 import numpy as np
-from typing import Optional, Literal
+from typing import Optional, Literal, Union
 
 
 class MyLineReg:
@@ -18,6 +19,12 @@ class MyLineReg:
     weights: Optional[np.ndarray] = None
     """Веса модели"""
 
+    sgd_sample: Union[int, float, None] = None
+    """Кол-во образцов, которое будет использовано на каждой итерации обучения"""
+
+    random_state: int = 42
+    """Параметр случайности"""
+
     def __init__(self, **kwargs):
         self.n_iter = kwargs.get("n_iter", self.n_iter)
         self.learning_rate = kwargs.get("learning_rate", self.learning_rate)
@@ -25,6 +32,8 @@ class MyLineReg:
         self._metric_value = None
         self._loss_value = None
         self.weights = None
+        self.sgd_sample = kwargs.get("sgd_sample", self.sgd_sample)
+        self.random_state = kwargs.get("random_state", self.random_state)
 
         # регуляризация
         self.reg = kwargs.get("reg")
@@ -45,11 +54,25 @@ class MyLineReg:
         X.insert(0, "x_0", 1)  # свободный коэффициент
         self.weights = np.ones(feature_count + 1)
 
-        for i in range(self.n_iter):
-            y_predict = (X.values @ self.weights)  # Используем матричное умножение
-            self._loss_value = ((y - y_predict) ** 2).sum() / observation_count + self.l1_coef * self.weights.sum() + self.l2_coef * (self.weights ** 2).sum()  # mse
+        if isinstance(self.sgd_sample, int):
+            sgd_sample = self.sgd_sample
+        elif isinstance(self.sgd_sample, float):
+            sgd_sample = int(self.sgd_sample * observation_count)
+        else:
+            sgd_sample = observation_count
 
-            gradient = 2 / observation_count * X.T.values @ (y_predict - y) + self.l1_coef * np.sign(self.weights) + self.l2_coef * 2 * self.weights
+        random.seed(self.random_state)
+
+        for i in range(self.n_iter):
+            sample_rows_idx = random.sample(range(observation_count), sgd_sample)
+            X_sample = X.iloc[sample_rows_idx]
+            y_sample = y.iloc[sample_rows_idx]
+            observation_count_sample, feature_count_sample = X_sample.shape
+
+            y_predict = (X_sample.values @ self.weights)  # Используем матричное умножение
+            self._loss_value = ((y_sample - y_predict) ** 2).sum() / observation_count_sample + self.l1_coef * self.weights.sum() + self.l2_coef * (self.weights ** 2).sum()  # mse
+
+            gradient = 2 / observation_count_sample * X_sample.T.values @ (y_predict - y_sample) + self.l1_coef * np.sign(self.weights) + self.l2_coef * 2 * self.weights
             self.weights -= (self.learning_rate(i+1) if callable(self.learning_rate) else self.learning_rate) * gradient
 
         y_predict = (X.values @ self.weights)
