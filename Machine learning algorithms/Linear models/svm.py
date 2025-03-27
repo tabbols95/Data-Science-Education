@@ -10,11 +10,13 @@ class SVM:
     def __init__(self,
                  n_iter: int = 10,
                  learning_rate: float = 0.001,
+                 C: float = 1,
                  **kw):
         self.n_iter = n_iter
         self.learning_rate = learning_rate
         self.weights = None
         self.b = None
+        self.C = C
 
     def __repr__(self):
         params = ', '.join(f'{k}={v}' for k, v in vars(self).items())
@@ -43,8 +45,8 @@ class SVM:
                     grad_w = 2 * self.weights
                     grad_b = 0
                 else:
-                    grad_w = 2 * self.weights - y_i * x_i
-                    grad_b = - y_i
+                    grad_w = 2 * self.weights - self.C * y_i * x_i
+                    grad_b = - self.C * y_i
 
                 self.weights -= self.learning_rate * grad_w
                 self.b -= self.learning_rate * grad_b
@@ -60,7 +62,7 @@ class SVM:
 
     def _calculate_loss(self, X: pd.DataFrame, y: np.array) -> float:
         """Вычисление функции потерь"""
-        hinge_loss = np.maximum(0, 1 - y * (X @ self.weights + self.b)).mean()
+        hinge_loss = self.C * np.maximum(0, 1 - y * (X @ self.weights + self.b)).mean()
         regularization = np.linalg.norm(self.weights) ** 2
         return regularization + hinge_loss
 
