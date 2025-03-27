@@ -54,6 +54,10 @@ class SVM:
                 loss = self._calculate_loss(X, target_converted)
                 print(f"{i} | loss: {loss:.2f}")
 
+    def predict(self, features: pd.DataFrame):
+        y = np.sign(features @ self.weights + self.b)
+        return np.where(y == -1, 0, 1)
+
     def _calculate_loss(self, X: pd.DataFrame, y: np.array) -> float:
         """Вычисление функции потерь"""
         hinge_loss = np.maximum(0, 1 - y * (X @ self.weights + self.b)).mean()
