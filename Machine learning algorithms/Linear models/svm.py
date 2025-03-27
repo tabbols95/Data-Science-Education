@@ -62,8 +62,3 @@ class SVM:
 
     def get_coef(self) -> tuple:
         return self.weights, self.b
-
-if __name__ == '__main__':
-    my_svm = SVM()
-    my_svm.fit(pd.DataFrame({'1': [1, 2, 3]}), pd.Series([1, 0, 0]))
-    print(my_svm.get_coef())
