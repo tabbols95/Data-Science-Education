@@ -1,6 +1,8 @@
-from typing import Optional
+from typing import Optional, Literal
 import numpy as np
 import pandas as pd
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 
 
 class MyLogReg:
@@ -14,6 +16,9 @@ class MyLogReg:
 
     weights: Optional[np.ndarray] = None
     """Веса модели"""
+
+    metrics: dict = {}
+    """Метрики обученной модели"""
 
     eps = 1e-15
     """Во избежании получения inf"""
@@ -37,6 +42,13 @@ class MyLogReg:
             gradient = X.T.values @ (y_predict - y) / observation_count
             self.weights -= self.learning_rate * gradient
 
+        y_predict_bin = [int(y_pred) for y_pred in (1 / (1 + np.exp(-(X @ self.weights))) > 0.5)]
+        self.metrics["accuracy"] = accuracy_score(y, y_predict_bin)
+        self.metrics["precision"] = precision_score(y, y_predict_bin)
+        self.metrics["recall"] = recall_score(y, y_predict_bin)
+        self.metrics["f1"] = f1_score(y, y_predict_bin)
+        self.metrics["roc_auc"] = roc_auc_score(y, y_predict_bin)
+
     def predict_proba(self, X: pd.DataFrame):
         if "x_0" not in X.columns:
             X.insert(0, "x_0", 1)
@@ -48,6 +60,9 @@ class MyLogReg:
             X.insert(0, "x_0", 1)
         y_predict = (1 / (1 + np.exp(-(X @ self.weights))) > 0.5).sum()
         return y_predict
+
+    def get_best_score(self, metric: Optional[Literal["accuracy", "precision", "recall", "f1", "roc_auc"]] = None):
+        return self.metrics.get(metric)
 
     def get_coef(self):
         return self.weights[1:]
