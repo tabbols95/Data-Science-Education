@@ -1,7 +1,10 @@
 # external
+from random import sample
+
 import pandas as pd
 import numpy as np
 from typing import Union
+import random
 
 
 class SVM:
@@ -11,12 +14,16 @@ class SVM:
                  n_iter: int = 10,
                  learning_rate: float = 0.001,
                  C: float = 1,
+                 sgd_sample: Union[int, float, None] = None,
+                 random_state: int = 42,
                  **kw):
         self.n_iter = n_iter
         self.learning_rate = learning_rate
         self.weights = None
         self.b = None
         self.C = C
+        self.sgd_sample = sgd_sample
+        self.random_state = random_state
 
     def __repr__(self):
         params = ', '.join(f'{k}={v}' for k, v in vars(self).items())
@@ -26,6 +33,8 @@ class SVM:
         return self.__repr__()
 
     def fit(self, X: pd.DataFrame, y: pd.Series, verbose: Union[int, bool] = False):
+        random.seed(self.random_state)
+
         observation_count, feature_count = X.shape
         self.b = 1
         self.weights = np.ones(shape=feature_count)
@@ -35,11 +44,26 @@ class SVM:
         if verbose:
             print(f"start | loss: {loss:.2f}")
 
+        # Формируем кол-во наблюдений в выборке
+        if isinstance(self.sgd_sample, int):
+            n_observations = self.sgd_sample
+        elif isinstance(self.sgd_sample, float):
+            n_observations = round(observation_count * self.sgd_sample)
+        else:
+            n_observations = observation_count
+
         # Выполняем n_iter шагов градиентного спуска
         for i in range(self.n_iter):
-            for i_row in range(observation_count):
-                x_i = X.iloc[i_row].values
-                y_i = target_converted[i_row]
+            if self.sgd_sample is None:
+                sample_rows_idx = range(n_observations)
+            else:
+                sample_rows_idx = random.sample(range(observation_count), n_observations)
+            X_sample = X.iloc[sample_rows_idx].reset_index(drop=True)
+            target_converted_sample = target_converted[sample_rows_idx]
+
+            for i_row in range(n_observations):
+                x_i = X_sample.iloc[i_row].values
+                y_i = target_converted_sample[i_row]
 
                 if y_i * (x_i @ self.weights + self.b) >= 1:
                     grad_w = 2 * self.weights
