@@ -1,16 +1,19 @@
 # external
 import numpy as np
 import pandas as pd
+from typing import Literal
 
 
 class KNNClassification:
     """Метод ближайших соседей (Классификация)"""
 
-    def __init__(self, k: int = 3):
+    def __init__(self, k: int = 3,
+                 metric: Literal['euclidean', 'chebyshev', 'manhattan', 'cosine'] = 'euclidean'):
         self.k = k
         self.train_size = None
         self.X = pd.DataFrame()
         self.y = pd.Series()
+        self.metric = metric
 
     def __repr__(self):
         params = ', '.join(f'{k}={v}' for k, v in vars(self).items())
@@ -29,7 +32,7 @@ class KNNClassification:
         for _, test_row in features.iterrows():
             distances = []
             for _, train_row in self.X.iterrows():
-                distance = np.sqrt(np.sum((test_row - train_row) ** 2))
+                distance = self._calc_distance(test_row, train_row)
                 distances.append(distance)
 
             nearest_indices = np.argsort(distances)[:self.k]
@@ -51,7 +54,7 @@ class KNNClassification:
         for _, test_row in features.iterrows():
             distances = []
             for _, train_row in self.X.iterrows():
-                distance = np.sqrt(np.sum((test_row - train_row) ** 2))
+                distance = self._calc_distance(test_row, train_row)
                 distances.append(distance)
 
             nearest_indices = np.argsort(distances)[:self.k]
@@ -61,3 +64,18 @@ class KNNClassification:
             probas.append(proba)
 
         return np.array(probas)
+
+    def _calc_distance(self,
+                       test_row: pd.Series,
+                       train_row: pd.Series) -> float:
+
+        if self.metric == 'euclidean':
+            return np.sqrt(np.sum((test_row - train_row) ** 2))
+        elif self.metric == 'chebyshev':
+            return np.linalg.norm(test_row - train_row, ord=np.inf)
+        elif self.metric == 'manhattan':
+            return np.linalg.norm(test_row - train_row, ord=1)
+        elif self.metric == 'cosine':
+            return 1 - (np.sum(test_row * train_row) / (np.sqrt(np.sum(test_row ** 2)) * np.sqrt(np.sum(train_row ** 2))))
+        else:
+            raise ValueError(f"Unknown metric: {self.metric}")
